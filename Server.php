@@ -15,6 +15,30 @@ class Server {
         $this->port = $port;
     }
 
+    public function login($username, $password, $settings = array()) {
+        $settings = array_merge(array(
+            "search_field" => "dn"
+        ), $settings);
+
+        if ( $this->user_set() ) { $this->unset_user(); }
+
+        // we'll need a dn entry to log in, so if one isn't provided, we'll do an anonymous search to get it
+        if ( $settings['search_field'] != "dn" ) {
+            $first_pass = $this->search(array("search_field" => $username));
+            if ( count($first_pass) > 1 ) {
+                throw new \Exception("Multiple users found under '" . $username . "'");
+            } else {
+                $dn = $first_pass->get_value('dn');
+            }
+        } else { 
+            $dn = $username;
+        }
+
+        $this->set_user($dn, $password);
+        return $this->search(array($settings['search_field'] => $username));
+
+    }
+
     /**
      *  preps array|string into an LDAP-ready query
      *  
@@ -76,16 +100,19 @@ class Server {
      *  @throws Exception       if unable to connect to LDAP server
      *  @throws Exception       if password and username do not match
      *
-     *  @return array           associative array of results
+     *  @return Person[]        returns an array of DapperDan\Person objects
      *
      */
 
-    public function search($terms, $scope, $fields = array()) {
+    public function search($terms, $scope = null) {
         
-        if ( is_null($scope) ) { throw new \Exception("No scope defined for search"); }
+        if ( is_null($scope) && is_null($this->scope)) { throw new \Exception("No scope defined for search"); }
+        if ( is_null($scope) && !is_null($this->scope) ) { $scope = $this->scope; }
 
         // cast $scope into an array so we only have to write one piece of code
         if ( !is_array($scope) ) { $scope = (array) $scope; }
+
+        $query = $this->prep_query($terms);
 
         $connection = ldap_connect($this->url, $this->port);
         if (!$connection) { throw new \Exception("Could not connect to LDAP server!"); }
@@ -94,26 +121,14 @@ class Server {
         if (!$bind) { throw new \Exception("Incorrect Password!"); }
 
         $results = array();
-        
-        // there's probably a cleaner array_map-esque solution to this
-        if ( !empty($fields) ) {
-            $clean_results = array();
-            
-            for($i = 0; $i < $res_count; $i++ ) {
-                foreach($fields as $field) {
-                    $entry = $results[$i][$field];
-                    if ( isset($entry['count']) && $entry['count'] == 0 ) {
-                        $clean_results[$i][$field] = $entry[0];
-                    } else {
-                        $clean_results[$i][$field] = $entry;
-                    }
-                }
-            }
 
-            $results = $clean_results;
+        foreach($scope as $s) {
+            $res = ldap_search($connection, $s, $query);
+            $ent = ldap_get_entries($connection, $res);
+            $results = array_merge($results, $ent);
         }
 
-        return $results;
+        return array_map(function($user) { $user = new Person($user); }, $results);
     }
 
     /**
@@ -146,6 +161,14 @@ class Server {
         $this->username = null;
         $this->password = null;
     }
+
+    /**
+     *  is an instance user set?
+     *
+     *  @return boolean
+     */
+
+    public function user_set() { return !is_null($this->username) && !is_null($this->password); }
 
 
 }
