@@ -1,0 +1,12 @@
+{
+    "name": "trexlerlibrary/dapper-dan",
+    "description": "",
+    "license": "MIT",
+    "version": "1.0.0",
+    "authors": [
+        {
+            "name": "Adam Malantonio",
+            "email": "amalantonio@muhlenberg.edu"
+        }
+    ]
+}
