@@ -9,6 +9,9 @@
             "email": "amalantonio@muhlenberg.edu"
         }
     ],
+    "require": {
+        "php": ">=5.3"
+    },
     "autoload": {
         "psr-4": {
             "DapperDan\\": "src"
