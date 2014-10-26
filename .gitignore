@@ -1,2 +1,4 @@
-*.old*
-dapperdan.*.php
+/vendor/
+
+# ignore test that uses live LDAP db info
+test.php

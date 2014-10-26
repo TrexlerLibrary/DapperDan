@@ -1,6 +1,4 @@
 <?php
-require "Server.php";
-
 class ServerTest extends PHPUnit_Framework_TestCase {
     
     public $dan;
@@ -25,9 +23,7 @@ class ServerTest extends PHPUnit_Framework_TestCase {
         $correct_or_query = "(|(dn=MaxRoach)(dn=AbbeyLincoln))";
         $multiple_or_array = array("dn" => array("MaxRoach", "AbbeyLincoln"), "operator" => "|");
 
-
         $this->assertEquals($correct_and_query, $this->dan->prep_query($multiple_and_array));
-
         $this->assertEquals($correct_or_query, $this->dan->prep_query($multiple_or_array));
     }
 }

@@ -1,5 +1,5 @@
 {
-    "name": "trexlerlibrary/dapper-dan",
+    "name": "trexlerlibrary/dapperdan",
     "description": "",
     "license": "MIT",
     "version": "1.0.0",
@@ -8,5 +8,10 @@
             "name": "Adam Malantonio",
             "email": "amalantonio@muhlenberg.edu"
         }
-    ]
+    ],
+    "autoload": {
+        "psr-4": {
+            "DapperDan\\": "src"
+        }
+    }
 }

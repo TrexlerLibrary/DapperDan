@@ -15,27 +15,38 @@ class Server {
         $this->port = $port;
     }
 
-    public function login($username, $password, $settings = array()) {
-        $settings = array_merge(array(
-            "search_field" => "dn"
-        ), $settings);
+    /**
+     *  authenticates user against LDAP database + returns all entries
+     *
+     *  @param  string              field to authenticate user (see $search_field note)
+     *  @param  string              password for user account
+     *  @param  string              search field to search first param against
+     *  @return DapperDan\Person    thin object wrapper around LDAP results array
+     *  @throws Exception           Exception for multiple results found w/ $username
+     *  @throws Exception           Exception for zero results found w/ $username
+     */
 
+    public function login($username, $password, $search_field = "dn") {
+        
         if ( $this->user_set() ) { $this->unset_user(); }
 
         // we'll need a dn entry to log in, so if one isn't provided, we'll do an anonymous search to get it
-        if ( $settings['search_field'] != "dn" ) {
-            $first_pass = $this->search(array("search_field" => $username));
+        if ( $search_field != "dn" ) {
+            $first_pass = $this->search(array($search_field => $username));
             if ( count($first_pass) > 1 ) {
-                throw new \Exception("Multiple users found under '" . $username . "'");
+                throw new \Exception("Multiple users found with '" . $username . "'");
+            } elseif ( count($first_pass) == 0 ) {
+                throw new \Exception("No user found with the " . $search_field . " '" . $username . "'");
             } else {
-                $dn = $first_pass->get_value('dn');
+                $dn = $first_pass[0]->get('dn');
             }
+
         } else { 
             $dn = $username;
         }
 
         $this->set_user($dn, $password);
-        return $this->search(array($settings['search_field'] => $username));
+        return $this->search(array($search_field => $username));
 
     }
 
@@ -44,8 +55,9 @@ class Server {
      *  
      *  array is structured as such:
      *      ldap_key => value
-     *  array _must_ contain an "operator" key/val pair. as of now,
-     *  the only values acceptable are "&" or "|"
+     *  
+     *  array can have 'operator' key, which must contain either "&" or "|"
+     *  (defaults to "&")
      *  
      *  @param  array|string
      *  @return string
@@ -55,8 +67,12 @@ class Server {
     public function prep_query($terms) {
         if ( is_array($terms) ) {
             $query = "";
-            $operator = $terms['operator'];
-            unset($terms['operator']);
+            if ( isset($terms['operator']) ) {
+                $operator = $terms['operator'];
+                unset($terms['operator']);
+            } elseif ( count($terms) > 1 && !isset($terms['operator']) ) {
+                $operator = "&";
+            }
 
             foreach($terms as $key => $val) {
                 // multiples w/ same key (for OR statements)
@@ -82,7 +98,7 @@ class Server {
             } elseif ( preg_match($stripped_reg, $terms) ) {
                 $query = "(" . $terms . ")";
             } else {
-                throw new Exception("Malformed search query: " . $terms);
+                throw new \Exception("Malformed search query: " . $terms);
             }
         }
 
@@ -123,12 +139,13 @@ class Server {
         $results = array();
 
         foreach($scope as $s) {
-            $res = ldap_search($connection, $s, $query);
-            $ent = ldap_get_entries($connection, $res);
+            $res     = ldap_search($connection, $s, $query);
+            $ent     = ldap_get_entries($connection, $res);
+            if ( isset($ent['count']) ) { unset($ent['count']); } 
             $results = array_merge($results, $ent);
         }
 
-        return array_map(function($user) { $user = new Person($user); }, $results);
+        return array_map(function($user) { return new Person($user); }, $results);
     }
 
     /**
@@ -138,7 +155,9 @@ class Server {
      *
      */
 
-    public function set_scope($scope) { $this->scope = $scope; }
+    public function set_scope($scope) { 
+        $this->scope = $scope; 
+    }
 
     /**
      *  set instance-wide dn to associate w/ ldap query
@@ -168,7 +187,7 @@ class Server {
      *  @return boolean
      */
 
-    public function user_set() { return !is_null($this->username) && !is_null($this->password); }
-
-
+    public function user_set() { 
+        return !is_null($this->username) && !is_null($this->password); 
+    }
 }

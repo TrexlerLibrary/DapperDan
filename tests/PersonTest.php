@@ -1,5 +1,4 @@
 <?php
-require "Person.php";
 class PersonTest extends PHPUnit_Framework_TestCase {
 
     public $person;
@@ -15,14 +14,14 @@ class PersonTest extends PHPUnit_Framework_TestCase {
         $this->person = new DapperDan\Person($this->person_array);
     }
 
-    public function test_get_value() {
-        $this->assertEquals($this->person_array['fn'], $this->person->get_value('fn'));
-        $this->assertEquals($this->person_array, $this->person->get_value(array_keys($this->person_array)));
+    public function test_get() {
+        $this->assertEquals($this->person_array['fn'], $this->person->get('fn'));
+        $this->assertEquals($this->person_array, $this->person->get(array_keys($this->person_array)));
     }
 
-    public function test_has_key() {
-        $this->assertTrue($this->person->has_key('email'));
-        $this->assertFalse($this->person->has_key('dn'));
+    public function test_has() {
+        $this->assertTrue($this->person->has('email'));
+        $this->assertFalse($this->person->has('dn'));
     }
 
 }

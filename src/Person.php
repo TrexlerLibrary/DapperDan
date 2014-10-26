@@ -4,8 +4,17 @@ namespace DapperDan;
 class Person {
 
     public function __construct($array) {
-        foreach( $array as $key => $val ) {
+        foreach($array as $key => &$val ) {
             if ( is_string($key) ) {
+                if ( preg_match("/count/i", $key) ) { continue; }
+                if ( is_array($val) && array_key_exists("count", $val) ) {
+                    unset($val['count']);
+                }
+
+                if ( is_array($val) && count($val) == 1 ) {
+                    $val = $val[0];
+                }
+
                 $this->$key = $val;
             }
         }
@@ -19,29 +28,19 @@ class Person {
      *
      */
 
-    public function get_value($key) {
+    public function get($key) {
         if ( is_array($key) ) {
             $ret = array();
             foreach($key as $k) {
-                $ret[$k] = $this->get_value($k);
+                $ret[$k] = $this->get($k);
             }
             return $ret;
         }
 
-        if ( $this->has_key($key) ) {
+        if ( $this->has($key) ) {
             return $this->$key; 
         }
     }
-
-    /**
-     *  alias for Person::get_value()
-     *
-     *  @param  string|array
-     *  @return string|array
-     *
-     */
-
-    public function get_values($key) { return $this->get_value($key); }
 
     /**
      *  object wrapper for property_exists
@@ -51,5 +50,5 @@ class Person {
      *
      */
 
-    public function has_key($key) { return property_exists($this, $key); }
+    public function has($key) { return property_exists($this, $key); }
 }
