@@ -1,6 +1,8 @@
 DapperDan
 =========
 
+[![Build Status](https://travis-ci.org/TrexlerLibrary/DapperDan.svg)](https://travis-ci.org/TrexlerLibrary/DapperDan)
+
 a reconfiguration of our single-purpose LDAP authentication script
 
 ## usage
